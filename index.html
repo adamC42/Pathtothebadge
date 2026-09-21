@@ -1,0 +1,1401 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1">
+<meta name="theme-color" content="#1e293b">
+<meta name="description" content="Progressive training simulator for future law enforcement officers">
+
+<!-- Apple PWA / Add to Home Screen -->
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Path to Badge">
+<link rel="apple-touch-icon" href="icon-192.png">
+
+<!-- Standard PWA -->
+<link rel="manifest" href="manifest.json">
+<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+<link rel="icon" type="image/png" sizes="512x512" href="icon-512.png">
+
+<title>Path to the Badge</title>
+<style>
+  :root {
+    --bg: #0f172a;
+    --panel: #1e293b;
+    --panel2: #334155;
+    --accent: #3b82f6;
+    --accent2: #60a5fa;
+    --success: #22c55e;
+    --warn: #f59e0b;
+    --danger: #ef4444;
+    --text: #e2e8f0;
+    --muted: #94a3b8;
+    --border: #475569;
+    --safe-top: env(safe-area-inset-top, 0px);
+    --safe-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  html, body {
+    height: 100%;
+    overflow-x: hidden;
+  }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    min-height: 100dvh;
+    font-size: 16px;
+    line-height: 1.5;
+    padding-top: var(--safe-top);
+    padding-bottom: var(--safe-bottom);
+    -webkit-font-smoothing: antialiased;
+  }
+  .app {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 12px 14px 90px;
+    min-height: 100%;
+  }
+  header {
+    text-align: center;
+    padding: 16px 10px 10px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 16px;
+  }
+  h1 { font-size: 1.7rem; color: var(--accent2); letter-spacing: -0.5px; }
+  .tagline { color: var(--muted); font-size: 0.9rem; margin-top: 4px; }
+  .screen { display: none; }
+  .screen.active { display: block; }
+
+  /* Install banner */
+  .install-banner {
+    display: none;
+    background: linear-gradient(135deg, #1e40af, #3b82f6);
+    color: white;
+    padding: 12px 16px;
+    border-radius: 12px;
+    margin-bottom: 16px;
+    text-align: center;
+    font-size: 0.95rem;
+  }
+  .install-banner.show { display: block; }
+  .install-banner button {
+    margin-top: 8px;
+    background: white;
+    color: #1e40af;
+    border: none;
+    padding: 8px 18px;
+    border-radius: 20px;
+    font-weight: 600;
+    font-size: 0.9rem;
+    cursor: pointer;
+  }
+
+  /* Dashboard */
+  .rank-bar {
+    background: var(--panel);
+    border-radius: 12px;
+    padding: 14px;
+    margin-bottom: 14px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .rank-info h2 { font-size: 1.25rem; color: var(--accent2); }
+  .rank-info .sub { color: var(--muted); font-size: 0.85rem; }
+  .xp-box { text-align: right; }
+  .xp-bar {
+    width: 140px; height: 8px; background: var(--panel2);
+    border-radius: 6px; overflow: hidden; margin-top: 4px;
+  }
+  .xp-fill { height: 100%; background: var(--accent); transition: width 0.4s; }
+  .skills-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+    gap: 8px;
+    margin-bottom: 18px;
+  }
+  .skill-card {
+    background: var(--panel);
+    border-radius: 10px;
+    padding: 10px;
+    text-align: center;
+  }
+  .skill-card .name { font-size: 0.72rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.4px; }
+  .skill-card .val { font-size: 1.35rem; font-weight: 700; color: var(--accent2); margin: 2px 0; }
+  .skill-card .bar { height: 5px; background: var(--panel2); border-radius: 4px; overflow: hidden; }
+  .skill-card .fill { height: 100%; background: var(--success); transition: width 0.3s; }
+
+  .module-grid { display: grid; gap: 10px; }
+  .module {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 14px 16px;
+    cursor: pointer;
+    transition: border-color 0.2s, transform 0.15s;
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+    -webkit-user-select: none;
+    user-select: none;
+  }
+  .module:active { transform: scale(0.98); }
+  .module:hover, .module:focus { border-color: var(--accent); }
+  .module.locked { opacity: 0.55; cursor: not-allowed; }
+  .module .icon { font-size: 1.6rem; flex-shrink: 0; }
+  .module h3 { font-size: 1.05rem; margin-bottom: 3px; }
+  .module p { color: var(--muted); font-size: 0.85rem; }
+  .module .req { font-size: 0.78rem; color: var(--warn); margin-top: 5px; }
+
+  .btn {
+    background: var(--accent);
+    color: white;
+    border: none;
+    padding: 12px 20px;
+    border-radius: 10px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s;
+    min-height: 44px;
+  }
+  .btn:active { background: var(--accent2); }
+  .btn.secondary {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--text);
+  }
+  .btn-row {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-top: 14px;
+    justify-content: center;
+  }
+
+  .game-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 14px;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .back {
+    background: var(--panel2);
+    color: var(--text);
+    border: none;
+    padding: 10px 14px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 0.95rem;
+    min-height: 40px;
+  }
+  .game-title { font-size: 1.15rem; color: var(--accent2); font-weight: 600; }
+
+  .panel {
+    background: var(--panel);
+    border-radius: 12px;
+    padding: 16px;
+    margin-bottom: 14px;
+  }
+  .passage {
+    background: var(--panel2);
+    border-radius: 8px;
+    padding: 14px;
+    margin: 10px 0;
+    font-size: 1rem;
+    line-height: 1.65;
+    max-height: 260px;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  .question { font-size: 1.1rem; margin: 12px 0 10px; font-weight: 600; }
+  .choices { display: grid; gap: 8px; }
+  .choice {
+    background: var(--panel2);
+    border: 2px solid transparent;
+    border-radius: 10px;
+    padding: 14px;
+    cursor: pointer;
+    text-align: left;
+    transition: all 0.15s;
+    min-height: 48px;
+    display: flex;
+    align-items: center;
+  }
+  .choice:active { transform: scale(0.98); }
+  .choice.selected { border-color: var(--accent); background: #1e3a5f; }
+  .choice.correct { border-color: var(--success); background: #14532d; }
+  .choice.wrong { border-color: var(--danger); background: #450a0a; }
+
+  .feedback {
+    margin-top: 12px;
+    padding: 12px;
+    border-radius: 8px;
+    display: none;
+    font-size: 0.95rem;
+  }
+  .feedback.show { display: block; }
+  .feedback.good { background: #14532d; border: 1px solid var(--success); }
+  .feedback.bad { background: #450a0a; border: 1px solid var(--danger); }
+  .feedback .fact { color: var(--muted); font-size: 0.9rem; margin-top: 6px; }
+
+  .timer {
+    font-size: 1.3rem;
+    font-weight: 700;
+    color: var(--warn);
+    text-align: center;
+    margin: 6px 0;
+  }
+  .timer.urgent { color: var(--danger); animation: pulse 0.8s infinite; }
+  @keyframes pulse { 50% { opacity: 0.6; } }
+
+  .priority-list { list-style: none; }
+  .priority-item {
+    background: var(--panel2);
+    margin: 8px 0;
+    padding: 14px;
+    border-radius: 10px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+    border: 2px solid transparent;
+    touch-action: none;
+  }
+  .priority-item .urgency {
+    font-size: 0.75rem;
+    padding: 3px 8px;
+    border-radius: 4px;
+    flex-shrink: 0;
+    font-weight: 600;
+  }
+  .urgency.high { background: var(--danger); }
+  .urgency.med { background: var(--warn); color: #000; }
+  .urgency.low { background: var(--success); }
+
+  .stress-box { text-align: center; padding: 16px; }
+  .breath-circle {
+    width: 130px; height: 130px;
+    border-radius: 50%;
+    background: var(--accent);
+    margin: 20px auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.1rem;
+    font-weight: 600;
+    transition: transform 4s ease-in-out;
+  }
+  .breath-circle.inhale { transform: scale(1.35); }
+  .breath-circle.exhale { transform: scale(1); }
+
+  .log-entry {
+    border-left: 3px solid var(--accent);
+    padding: 8px 12px;
+    margin: 8px 0;
+    background: var(--panel2);
+    border-radius: 0 6px 6px 0;
+    font-size: 0.9rem;
+  }
+  .log-entry .time { color: var(--muted); font-size: 0.8rem; }
+
+  .footer-note {
+    text-align: center;
+    color: var(--muted);
+    font-size: 0.8rem;
+    margin-top: 28px;
+    padding-top: 14px;
+    border-top: 1px solid var(--border);
+  }
+
+  /* Offline indicator */
+  .offline-badge {
+    display: none;
+    position: fixed;
+    top: calc(var(--safe-top) + 8px);
+    right: 12px;
+    background: var(--warn);
+    color: #000;
+    font-size: 0.75rem;
+    font-weight: 600;
+    padding: 4px 10px;
+    border-radius: 20px;
+    z-index: 100;
+  }
+  .offline-badge.show { display: block; }
+
+  @media (max-width: 560px) {
+    h1 { font-size: 1.45rem; }
+    .skills-grid { grid-template-columns: repeat(2, 1fr); }
+    .app { padding: 10px 12px 80px; }
+  }
+</style>
+</head>
+<body>
+<div class="offline-badge" id="offlineBadge">Offline</div>
+
+<div class="app">
+  <header>
+    <h1>🛡️ Path to the Badge</h1>
+    <p class="tagline">Progressive training for future law enforcement officers</p>
+  </header>
+
+  <!-- Install prompt for iOS / others -->
+  <div class="install-banner" id="installBanner">
+    <strong>Install this app</strong><br>
+    On iPhone/iPad: tap the Share button <span style="font-size:1.1em"> ⎋ </span> then <strong>Add to Home Screen</strong>
+    <br>
+    <button onclick="document.getElementById('installBanner').classList.remove('show')">Got it</button>
+  </div>
+
+  <!-- ========== DASHBOARD ========== -->
+  <div id="dash" class="screen active">
+    <div class="rank-bar">
+      <div class="rank-info">
+        <h2 id="rankName">Recruit</h2>
+        <div class="sub">Session streak: <span id="streak">0</span> days</div>
+      </div>
+      <div class="xp-box">
+        <div>XP: <strong id="xpVal">0</strong> / <span id="xpNext">100</span></div>
+        <div class="xp-bar"><div class="xp-fill" id="xpFill" style="width:0%"></div></div>
+      </div>
+    </div>
+
+    <div class="skills-grid" id="skillsGrid"></div>
+
+    <h3 style="margin: 16px 0 10px; color: var(--muted); font-size: 0.85rem; text-transform: uppercase; letter-spacing: 1px;">Training Modules</h3>
+    <div class="module-grid" id="moduleGrid"></div>
+
+    <div style="margin-top: 22px; display:flex; gap:8px; flex-wrap:wrap;">
+      <button class="btn secondary" onclick="showLog()">Career Log</button>
+      <button class="btn secondary" onclick="showStandards()">Professional Standards</button>
+    </div>
+  </div>
+
+  <!-- ========== READING ========== -->
+  <div id="reading" class="screen">
+    <div class="game-header">
+      <button class="back" onclick="goDash()">← Dashboard</button>
+      <div class="game-title">Reading Comprehension</div>
+      <div id="readProgress" style="color:var(--muted);font-size:0.85rem;"></div>
+    </div>
+    <div class="panel">
+      <div class="passage" id="passageText"></div>
+      <div class="question" id="readQ"></div>
+      <div class="choices" id="readChoices"></div>
+      <div class="feedback" id="readFeedback"></div>
+      <div class="btn-row" id="readNext" style="display:none;">
+        <button class="btn" onclick="nextReading()">Next Passage</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========== WRITING ========== -->
+  <div id="writing" class="screen">
+    <div class="game-header">
+      <button class="back" onclick="goDash()">← Dashboard</button>
+      <div class="game-title">Writing Clarity & Language</div>
+      <div id="writeProgress" style="color:var(--muted);font-size:0.85rem;"></div>
+    </div>
+    <div class="panel">
+      <div class="question" id="writeQ"></div>
+      <div class="choices" id="writeChoices"></div>
+      <div class="feedback" id="writeFeedback"></div>
+      <div class="btn-row" id="writeNext" style="display:none;">
+        <button class="btn" onclick="nextWriting()">Next Question</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========== SITUATIONAL ========== -->
+  <div id="situational" class="screen">
+    <div class="game-header">
+      <button class="back" onclick="goDash()">← Dashboard</button>
+      <div class="game-title">Situational Judgment</div>
+      <div></div>
+    </div>
+    <div class="panel">
+      <div class="question" id="sitScenario" style="font-weight:400; font-size:1.02rem;"></div>
+      <div class="question" style="margin-top:14px;">What is the most professional response?</div>
+      <div class="choices" id="sitChoices"></div>
+      <div class="feedback" id="sitFeedback"></div>
+      <div class="btn-row" id="sitNext" style="display:none;">
+        <button class="btn" onclick="nextSituational()">Next Scenario</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========== REPORT ========== -->
+  <div id="report" class="screen">
+    <div class="game-header">
+      <button class="back" onclick="goDash()">← Dashboard</button>
+      <div class="game-title">Report Writing Drill</div>
+      <div></div>
+    </div>
+    <div class="panel">
+      <div style="color:var(--muted); margin-bottom:6px; font-size:0.9rem;">Facts from the incident:</div>
+      <div class="passage" id="reportFacts"></div>
+      <div class="question">Select the clearest, most professional summary:</div>
+      <div class="choices" id="reportChoices"></div>
+      <div class="feedback" id="reportFeedback"></div>
+      <div class="btn-row" id="reportNext" style="display:none;">
+        <button class="btn" onclick="nextReport()">Next Report</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========== RADIO ========== -->
+  <div id="radio" class="screen">
+    <div class="game-header">
+      <button class="back" onclick="goDash()">← Dashboard</button>
+      <div class="game-title">Radio & Communication</div>
+      <div></div>
+    </div>
+    <div class="panel">
+      <div class="question" id="radioQ"></div>
+      <div class="choices" id="radioChoices"></div>
+      <div class="feedback" id="radioFeedback"></div>
+      <div class="btn-row" id="radioNext" style="display:none;">
+        <button class="btn" onclick="nextRadio()">Next</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========== SHIFT ========== -->
+  <div id="shift" class="screen">
+    <div class="game-header">
+      <button class="back" onclick="goDash()">← Dashboard</button>
+      <div class="game-title">Shift Priority Simulator</div>
+      <div class="timer" id="shiftTimer">03:00</div>
+    </div>
+    <div class="panel">
+      <p style="color:var(--muted); margin-bottom:12px; font-size:0.95rem;">Prioritize the calls. Tap and hold then drag higher priority items to the top. Decide calmly.</p>
+      <ul class="priority-list" id="priorityList"></ul>
+      <div class="btn-row">
+        <button class="btn" onclick="submitPriorities()">Submit Priority Order</button>
+      </div>
+      <div class="feedback" id="shiftFeedback"></div>
+    </div>
+  </div>
+
+  <!-- ========== STRESS ========== -->
+  <div id="stress" class="screen">
+    <div class="game-header">
+      <button class="back" onclick="goDash()">← Dashboard</button>
+      <div class="game-title">Composure Protocol</div>
+      <div></div>
+    </div>
+    <div class="panel stress-box">
+      <p id="stressInstruct">When pressure rises, controlled breathing restores clarity. Follow the circle.</p>
+      <div class="breath-circle" id="breathCircle">Ready</div>
+      <div class="btn-row">
+        <button class="btn" id="startBreath" onclick="startBreathing()">Begin 4-Cycle Reset</button>
+      </div>
+      <div id="stressAfter" style="display:none; margin-top:18px;">
+        <div class="question">Now apply that calm: a citizen is yelling at you after a traffic stop. Best first action?</div>
+        <div class="choices" id="stressChoices"></div>
+        <div class="feedback" id="stressFeedback"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========== LOG ========== -->
+  <div id="log" class="screen">
+    <div class="game-header">
+      <button class="back" onclick="goDash()">← Dashboard</button>
+      <div class="game-title">Career Log</div>
+      <div></div>
+    </div>
+    <div class="panel" id="logContent"></div>
+  </div>
+
+  <!-- ========== STANDARDS ========== -->
+  <div id="standards" class="screen">
+    <div class="game-header">
+      <button class="back" onclick="goDash()">← Dashboard</button>
+      <div class="game-title">Professional Standards</div>
+      <div></div>
+    </div>
+    <div class="panel" id="standardsContent"></div>
+  </div>
+
+  <div class="footer-note">
+    Progress saved on this device. Train consistently.<br>
+    Training aid only — always follow your agency’s official policies and academy instruction.
+  </div>
+</div>
+
+<script>
+// ===================== SERVICE WORKER & PWA =====================
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('./sw.js')
+      .then(reg => console.log('SW registered'))
+      .catch(err => console.log('SW registration failed', err));
+  });
+}
+
+// Offline detection
+window.addEventListener('online', () => document.getElementById('offlineBadge').classList.remove('show'));
+window.addEventListener('offline', () => document.getElementById('offlineBadge').classList.add('show'));
+if (!navigator.onLine) document.getElementById('offlineBadge').classList.add('show');
+
+// Show install tip on iOS Safari (not already in standalone)
+const isIos = /iphone|ipad|ipod/.test(window.navigator.userAgent.toLowerCase());
+const isStandalone = window.navigator.standalone === true || window.matchMedia('(display-mode: standalone)').matches;
+if (isIos && !isStandalone) {
+  // Show banner after a short delay
+  setTimeout(() => {
+    document.getElementById('installBanner').classList.add('show');
+  }, 1500);
+}
+
+// ===================== STATE & PERSISTENCE =====================
+const RANKS = [
+  { name: "Recruit", xp: 0 },
+  { name: "Cadet", xp: 120 },
+  { name: "Probationary Officer", xp: 300 },
+  { name: "Officer", xp: 550 },
+  { name: "Senior Officer", xp: 900 },
+  { name: "Field Training Officer", xp: 1400 },
+  { name: "Sergeant Candidate", xp: 2000 }
+];
+
+const SKILL_KEYS = ["comprehension", "writing", "judgment", "organization", "communication", "discipline"];
+const SKILL_LABELS = {
+  comprehension: "Comprehension",
+  writing: "Writing",
+  judgment: "Judgment",
+  organization: "Organization",
+  communication: "Communication",
+  discipline: "Self-Control"
+};
+
+let state = {
+  xp: 0,
+  skills: { comprehension: 10, writing: 10, judgment: 10, organization: 10, communication: 10, discipline: 10 },
+  streak: 0,
+  lastPlay: null,
+  log: [],
+  completed: { reading: 0, writing: 0, situational: 0, report: 0, radio: 0, shift: 0, stress: 0 }
+};
+
+function load() {
+  try {
+    const s = localStorage.getItem("pathToBadge");
+    if (s) state = { ...state, ...JSON.parse(s) };
+  } catch(e) {}
+  const today = new Date().toDateString();
+  if (state.lastPlay) {
+    const last = new Date(state.lastPlay).toDateString();
+    const diff = (new Date(today) - new Date(last)) / 86400000;
+    if (diff === 1) state.streak = (state.streak || 0) + 1;
+    else if (diff > 1) state.streak = 1;
+  } else state.streak = 1;
+  state.lastPlay = today;
+  save();
+}
+
+function save() {
+  localStorage.setItem("pathToBadge", JSON.stringify(state));
+}
+
+function addXP(amount, skill, skillPts = 2) {
+  state.xp += amount;
+  if (skill && state.skills[skill] !== undefined) {
+    state.skills[skill] = Math.min(100, state.skills[skill] + skillPts);
+  }
+  state.log.unshift({
+    time: new Date().toLocaleString(),
+    text: `+${amount} XP` + (skill ? ` · ${SKILL_LABELS[skill]} +${skillPts}` : "")
+  });
+  if (state.log.length > 40) state.log.pop();
+  save();
+  updateDash();
+}
+
+function currentRank() {
+  let r = RANKS[0];
+  for (const rank of RANKS) if (state.xp >= rank.xp) r = rank;
+  return r;
+}
+
+function nextRankXP() {
+  const cur = currentRank();
+  const idx = RANKS.findIndex(r => r.name === cur.name);
+  return RANKS[idx + 1] ? RANKS[idx + 1].xp : cur.xp + 500;
+}
+
+// ===================== DASHBOARD =====================
+function updateDash() {
+  const rank = currentRank();
+  const next = nextRankXP();
+  document.getElementById("rankName").textContent = rank.name;
+  document.getElementById("xpVal").textContent = state.xp;
+  document.getElementById("xpNext").textContent = next;
+  document.getElementById("streak").textContent = state.streak;
+  const pct = Math.min(100, ((state.xp - rank.xp) / (next - rank.xp)) * 100);
+  document.getElementById("xpFill").style.width = pct + "%";
+
+  const grid = document.getElementById("skillsGrid");
+  grid.innerHTML = "";
+  SKILL_KEYS.forEach(k => {
+    const v = state.skills[k];
+    grid.innerHTML += `
+      <div class="skill-card">
+        <div class="name">${SKILL_LABELS[k]}</div>
+        <div class="val">${v}</div>
+        <div class="bar"><div class="fill" style="width:${v}%"></div></div>
+      </div>`;
+  });
+
+  const modules = [
+    { id: "reading", icon: "📖", title: "Reading Comprehension", desc: "PELLET-B style passages & questions.", unlock: 0 },
+    { id: "writing", icon: "✍️", title: "Writing Clarity & Language", desc: "Spelling, vocabulary, clear sentences.", unlock: 0 },
+    { id: "situational", icon: "⚖️", title: "Situational Judgment", desc: "Professional decisions under pressure.", unlock: 0 },
+    { id: "report", icon: "📋", title: "Report Writing Drill", desc: "Turn facts into clear professional summaries.", unlock: 40 },
+    { id: "radio", icon: "📡", title: "Radio & Communication", desc: "Phonetic alphabet and concise transmissions.", unlock: 80 },
+    { id: "shift", icon: "⏱️", title: "Shift Priority Simulator", desc: "Time management under competing demands.", unlock: 150 },
+    { id: "stress", icon: "🧘", title: "Composure Protocol", desc: "Stress management + self-control.", unlock: 60 }
+  ];
+
+  const mGrid = document.getElementById("moduleGrid");
+  mGrid.innerHTML = "";
+  modules.forEach(m => {
+    const locked = state.xp < m.unlock;
+    mGrid.innerHTML += `
+      <div class="module ${locked ? "locked" : ""}" onclick="${locked ? "" : `startModule('${m.id}')`}">
+        <div class="icon">${m.icon}</div>
+        <div>
+          <h3>${m.title}</h3>
+          <p>${m.desc}</p>
+          ${locked ? `<div class="req">Unlocks at ${m.unlock} XP</div>` : ""}
+        </div>
+      </div>`;
+  });
+}
+
+function goDash() {
+  document.querySelectorAll(".screen").forEach(s => s.classList.remove("active"));
+  document.getElementById("dash").classList.add("active");
+  updateDash();
+}
+
+function startModule(id) {
+  document.querySelectorAll(".screen").forEach(s => s.classList.remove("active"));
+  document.getElementById(id).classList.add("active");
+  if (id === "reading") startReading();
+  if (id === "writing") startWriting();
+  if (id === "situational") startSituational();
+  if (id === "report") startReport();
+  if (id === "radio") startRadio();
+  if (id === "shift") startShift();
+  if (id === "stress") startStress();
+}
+
+// ===================== READING =====================
+const passages = [
+  {
+    text: "Effective report writing is one of the most critical skills a peace officer must develop. A well-written report serves multiple purposes: it documents the facts of an incident for future reference, provides a basis for charging decisions by prosecutors, and may later become evidence in court. Officers should write in clear, concise language, avoid speculation, and record only facts that can be supported by observation or reliable statements. Chronological order is usually preferred. The report must be completed before the end of the shift whenever possible so that details remain fresh.",
+    questions: [
+      { q: "According to the passage, what is one primary purpose of a well-written report?", choices: ["To impress supervisors with vocabulary", "To document facts for future reference and possible court use", "To express the officer’s personal opinion of the parties involved", "To fill a required quota of paperwork"], a: 1, exp: "The passage states that a report documents facts for future reference, charging decisions, and potential court evidence." },
+      { q: "What does the passage recommend regarding the timing of report completion?", choices: ["Reports may be left unfinished for several days", "Reports should be completed before the end of the shift when possible", "Reports should only be written after consulting an attorney", "Timing is unimportant as long as the report is eventually filed"], a: 1, exp: "The final sentence emphasizes completing the report before the end of the shift so details remain fresh." }
+    ]
+  },
+  {
+    text: "Community-oriented policing emphasizes partnerships between law enforcement agencies and the communities they serve. Rather than focusing solely on rapid response to calls for service, this approach encourages officers to engage in problem-solving with residents, identify underlying causes of crime, and work collaboratively to prevent future incidents. Trust is built through consistent, respectful interaction. Research has shown that when community members view the police as legitimate and fair, they are more likely to cooperate with investigations and report crime.",
+    questions: [
+      { q: "What is a key difference between community-oriented policing and a purely response-focused model?", choices: ["Community policing ignores emergency calls", "Community policing emphasizes problem-solving and partnerships", "Community policing requires officers to live in the neighborhood", "Community policing eliminates the need for investigations"], a: 1, exp: "The passage contrasts rapid response alone with engagement, problem-solving, and collaborative prevention." },
+      { q: "According to the passage, what increases the likelihood that residents will cooperate with police?", choices: ["Frequent use of force", "Viewing the police as legitimate and fair", "Higher arrest numbers", "More traffic citations"], a: 1, exp: "The last sentence links perceived legitimacy and fairness to greater cooperation and crime reporting." }
+    ]
+  },
+  {
+    text: "When conducting a traffic stop, officer safety and professional communication are paramount. The officer should choose a safe location, activate emergency lights, and approach the vehicle with awareness of surroundings. Clear, calm instructions reduce confusion and potential conflict. The officer must be able to articulate reasonable suspicion or probable cause for the stop. Courtesy does not diminish authority; in fact, a professional demeanor often de-escalates tension and improves voluntary compliance.",
+    questions: [
+      { q: "What does the passage identify as important during a traffic stop?", choices: ["Speaking as loudly as possible", "Officer safety and professional communication", "Issuing a citation in every case", "Avoiding the use of emergency lights"], a: 1, exp: "The opening sentence states that officer safety and professional communication are paramount." },
+      { q: "According to the passage, how can a professional demeanor affect a traffic stop?", choices: ["It weakens the officer’s authority", "It often de-escalates tension and improves compliance", "It is unnecessary if the driver is clearly at fault", "It guarantees the driver will not contest the citation"], a: 1, exp: "The final sentence notes that a professional demeanor often de-escalates tension and improves voluntary compliance." }
+    ]
+  },
+  {
+    text: "Use-of-force decisions are governed by the principle of objective reasonableness established in Graham v. Connor. Courts examine the facts and circumstances known to the officer at the moment force was used, without the benefit of hindsight. Relevant factors include the severity of the crime, whether the suspect posed an immediate threat, and whether the suspect was actively resisting or attempting to flee. Officers are expected to use only the force that is reasonably necessary to accomplish a lawful objective.",
+    questions: [
+      { q: "What legal standard guides use-of-force decisions according to the passage?", choices: ["Subjective good faith only", "Objective reasonableness", "Whatever the supervisor later approves", "The preference of the local prosecutor"], a: 1, exp: "The passage cites the principle of objective reasonableness from Graham v. Connor." },
+      { q: "When evaluating a use-of-force incident, what do courts consider?", choices: ["Only the final outcome of the incident", "Facts and circumstances known to the officer at the time, without hindsight", "Public opinion on social media", "The officer’s personal feelings about the suspect"], a: 1, exp: "Courts examine the facts known to the officer at the moment force was used, without hindsight." }
+    ]
+  },
+  {
+    text: "Chain of custody refers to the chronological documentation of the seizure, custody, control, transfer, analysis, and disposition of evidence. Maintaining an unbroken chain is essential so that evidence presented in court can be shown to be the same item collected at the scene and that it has not been altered or contaminated. Every person who handles the evidence must be identified, and the time and purpose of each transfer must be recorded. Breaks in the chain can result in evidence being ruled inadmissible.",
+    questions: [
+      { q: "Why is an unbroken chain of custody important?", choices: ["It reduces paperwork for officers", "It helps prove the evidence is the same item collected and has not been altered", "It is only required for felony cases", "It allows evidence to be stored indefinitely without documentation"], a: 1, exp: "The passage explains that the chain shows the item is the same one collected and has not been altered or contaminated." },
+      { q: "What can happen if the chain of custody is broken?", choices: ["Nothing; courts ignore minor breaks", "The evidence may be ruled inadmissible", "The officer is automatically terminated", "The case is automatically dismissed with prejudice"], a: 1, exp: "The final sentence states that breaks can result in evidence being ruled inadmissible." }
+    ]
+  }
+];
+
+let readIdx = 0, readQIdx = 0, readAnswered = false;
+
+function startReading() {
+  readIdx = Math.floor(Math.random() * passages.length);
+  readQIdx = 0;
+  showReading();
+}
+
+function showReading() {
+  readAnswered = false;
+  const p = passages[readIdx];
+  document.getElementById("passageText").textContent = p.text;
+  document.getElementById("readProgress").textContent = `Passage ${(readIdx % passages.length) + 1}`;
+  const q = p.questions[readQIdx];
+  document.getElementById("readQ").textContent = q.q;
+  const ch = document.getElementById("readChoices");
+  ch.innerHTML = "";
+  q.choices.forEach((c, i) => {
+    const d = document.createElement("div");
+    d.className = "choice";
+    d.textContent = c;
+    d.onclick = () => selectRead(i, d);
+    ch.appendChild(d);
+  });
+  document.getElementById("readFeedback").className = "feedback";
+  document.getElementById("readNext").style.display = "none";
+}
+
+function selectRead(i, el) {
+  if (readAnswered) return;
+  readAnswered = true;
+  const q = passages[readIdx].questions[readQIdx];
+  document.querySelectorAll("#readChoices .choice").forEach((c, idx) => {
+    c.style.pointerEvents = "none";
+    if (idx === q.a) c.classList.add("correct");
+    else if (idx === i) c.classList.add("wrong");
+  });
+  const fb = document.getElementById("readFeedback");
+  if (i === q.a) {
+    fb.className = "feedback good show";
+    fb.innerHTML = `Correct.<div class="fact">${q.exp}</div>`;
+    addXP(8, "comprehension", 3);
+    state.completed.reading++;
+  } else {
+    fb.className = "feedback bad show";
+    fb.innerHTML = `Incorrect. The best answer is highlighted.<div class="fact">${q.exp}</div>`;
+    addXP(2, "comprehension", 1);
+  }
+  document.getElementById("readNext").style.display = "flex";
+}
+
+function nextReading() {
+  readQIdx++;
+  if (readQIdx >= passages[readIdx].questions.length) {
+    readIdx = (readIdx + 1) % passages.length;
+    readQIdx = 0;
+  }
+  showReading();
+}
+
+// ===================== WRITING =====================
+const writeQs = [
+  { q: "Which sentence is written most clearly and correctly?", choices: [
+    "The suspect, who was wearing a red jacket fled on foot.",
+    "The suspect who was wearing a red jacket, fled on foot.",
+    "The suspect, who was wearing a red jacket, fled on foot.",
+    "The suspect who was wearing a red jacket fled, on foot."
+  ], a: 2, exp: "Nonrestrictive clauses need commas on both sides. Option C is correctly punctuated." },
+  { q: "Choose the sentence that is free of errors.", choices: [
+    "Their were three witnesses at the scene.",
+    "There were three witnesses at the scene.",
+    "Theyre were three witnesses at the scene.",
+    "Thier were three witnesses at the scene."
+  ], a: 1, exp: "“There” is the correct spelling for the existential “there were.”" },
+  { q: "Which word correctly completes the sentence? “The officer _____ the evidence in a sealed bag.”", choices: ["secured", "secure", "securing", "securement"], a: 0, exp: "Past-tense verb “secured” fits the completed action." },
+  { q: "Select the clearest version:", choices: [
+    "While driving, the vehicle was observed by the officer weaving between lanes.",
+    "The officer observed the vehicle weaving between lanes while driving.",
+    "Weaving between lanes, the officer observed the vehicle.",
+    "The vehicle was observed by the officer while it was weaving between lanes and driving."
+  ], a: 1, exp: "Option B is active, clear, and avoids the dangling or awkward modifiers present in the others." },
+  { q: "Which sentence uses the correct word?", choices: [
+    "The affect of the new policy was immediate.",
+    "The effect of the new policy was immediate.",
+    "The efect of the new policy was immediate.",
+    "The affects of the new policy was immediate."
+  ], a: 1, exp: "“Effect” is the noun meaning result. “Affect” is usually a verb." },
+  { q: "Identify the best-written sentence:", choices: [
+    "The report was written by me after the interview was conducted.",
+    "I wrote the report after conducting the interview.",
+    "After the interview was conducted, the report was written by myself.",
+    "The interview being conducted, the report was then written."
+  ], a: 1, exp: "Active voice and concise structure make B the clearest and most professional." },
+  { q: "Choose the correctly spelled word to complete: “The suspect gave a false _____.”", choices: ["adress", "address", "addres", "adresss"], a: 1, exp: "“Address” is the correct spelling." },
+  { q: "Which sentence avoids a vague pronoun reference?", choices: [
+    "When the officer spoke to the witness, he was nervous.",
+    "The witness appeared nervous when the officer spoke to him.",
+    "He was nervous when the officer spoke to the witness.",
+    "When speaking to the witness, he was nervous."
+  ], a: 1, exp: "Option B clearly identifies who appeared nervous." }
+];
+
+let writeIdx = 0, writeAnswered = false;
+
+function startWriting() {
+  writeIdx = Math.floor(Math.random() * writeQs.length);
+  showWriting();
+}
+
+function showWriting() {
+  writeAnswered = false;
+  const item = writeQs[writeIdx];
+  document.getElementById("writeQ").textContent = item.q;
+  document.getElementById("writeProgress").textContent = `Question ${(writeIdx % writeQs.length) + 1}`;
+  const ch = document.getElementById("writeChoices");
+  ch.innerHTML = "";
+  item.choices.forEach((c, i) => {
+    const d = document.createElement("div");
+    d.className = "choice";
+    d.textContent = c;
+    d.onclick = () => selectWrite(i);
+    ch.appendChild(d);
+  });
+  document.getElementById("writeFeedback").className = "feedback";
+  document.getElementById("writeNext").style.display = "none";
+}
+
+function selectWrite(i) {
+  if (writeAnswered) return;
+  writeAnswered = true;
+  const item = writeQs[writeIdx];
+  document.querySelectorAll("#writeChoices .choice").forEach((c, idx) => {
+    c.style.pointerEvents = "none";
+    if (idx === item.a) c.classList.add("correct");
+    else if (idx === i) c.classList.add("wrong");
+  });
+  const fb = document.getElementById("writeFeedback");
+  if (i === item.a) {
+    fb.className = "feedback good show";
+    fb.innerHTML = `Correct.<div class="fact">${item.exp}</div>`;
+    addXP(7, "writing", 3);
+    state.completed.writing++;
+  } else {
+    fb.className = "feedback bad show";
+    fb.innerHTML = `Incorrect.<div class="fact">${item.exp}</div>`;
+    addXP(2, "writing", 1);
+  }
+  document.getElementById("writeNext").style.display = "flex";
+}
+
+function nextWriting() {
+  writeIdx = (writeIdx + 1) % writeQs.length;
+  showWriting();
+}
+
+// ===================== SITUATIONAL =====================
+const sitQs = [
+  {
+    scenario: "You are on patrol when you receive a call about a loud argument in a residential driveway. Upon arrival you see two adults yelling at each other. Neither appears injured. A small child is watching from the porch. Both parties begin directing their anger toward you.",
+    choices: [
+      "Immediately raise your voice to match theirs so they understand you are in charge.",
+      "Separate the parties, use a calm and firm tone, check on the child’s welfare, and gather information from each person individually.",
+      "Tell them to quiet down or you will arrest both of them, then leave if they comply.",
+      "Ignore the adults and only speak to the child."
+    ],
+    a: 1,
+    exp: "Professional response prioritizes safety (including the child’s), de-escalation through calm communication, and orderly information gathering."
+  },
+  {
+    scenario: "During a traffic stop the driver becomes highly agitated, uses profanity, and questions your authority. The driver makes no sudden movements and keeps hands visible.",
+    choices: [
+      "Respond with equal intensity to establish dominance.",
+      "Remain calm, clearly explain the reason for the stop, and continue the process while monitoring for changes in behavior.",
+      "Immediately order the driver out of the vehicle and place them in handcuffs.",
+      "End the stop without further action to avoid conflict."
+    ],
+    a: 1,
+    exp: "Maintaining composure and clear communication while continuing the lawful stop demonstrates disciplined self-control and professional communication under pressure."
+  },
+  {
+    scenario: "You are writing a report at the station when a supervisor asks you to complete an additional urgent task. You still have two other reports due before end of shift.",
+    choices: [
+      "Ignore the new task and finish your current reports.",
+      "Acknowledge the request, briefly outline your current workload, and ask for priority guidance so you can organize the remaining time effectively.",
+      "Agree to everything and hope you can finish later at home.",
+      "Complain to a peer that you are being overloaded."
+    ],
+    a: 1,
+    exp: "Clear upward communication about workload and requesting prioritization demonstrates organization, time management, and professional communication."
+  },
+  {
+    scenario: "A witness provides a statement that conflicts with physical evidence you have already observed. The witness is cooperative but appears confused about the timeline.",
+    choices: [
+      "Confront the witness aggressively and accuse them of lying.",
+      "Document the statement accurately, note the discrepancy objectively, and ask clarifying questions without suggesting answers.",
+      "Change the statement in your report to match the physical evidence.",
+      "Discard the witness statement because it does not fit."
+    ],
+    a: 1,
+    exp: "Accurate documentation and neutral clarification protect the integrity of the investigation and the officer’s credibility."
+  },
+  {
+    scenario: "You observe a colleague make a minor procedural error that does not affect safety or the outcome of the call. No one else noticed.",
+    choices: [
+      "Immediately report the colleague for formal discipline.",
+      "Ignore it completely and never mention it.",
+      "Address it privately with the colleague in a professional manner so the correct procedure is reinforced.",
+      "Joke about it in front of other officers."
+    ],
+    a: 2,
+    exp: "For minor, non-safety issues, professional peer correction supports standards while preserving working relationships."
+  },
+  {
+    scenario: "You are the primary unit on a complex call that is taking longer than expected. Radio traffic is heavy and another unit asks if you need assistance.",
+    choices: [
+      "Ignore the offer to show you can handle everything alone.",
+      "Briefly update the requesting unit and accept assistance if it will improve safety or efficiency.",
+      "Tell them to stay clear because you have it under control, even if you are becoming overwhelmed.",
+      "Leave the scene to avoid looking like you need help."
+    ],
+    a: 1,
+    exp: "Accepting appropriate assistance demonstrates good judgment, stress management, and prioritization of safety and effectiveness over ego."
+  }
+];
+
+let sitIdx = 0, sitAnswered = false;
+
+function startSituational() {
+  sitIdx = Math.floor(Math.random() * sitQs.length);
+  showSit();
+}
+
+function showSit() {
+  sitAnswered = false;
+  const item = sitQs[sitIdx];
+  document.getElementById("sitScenario").textContent = item.scenario;
+  const ch = document.getElementById("sitChoices");
+  ch.innerHTML = "";
+  item.choices.forEach((c, i) => {
+    const d = document.createElement("div");
+    d.className = "choice";
+    d.textContent = c;
+    d.onclick = () => selectSit(i);
+    ch.appendChild(d);
+  });
+  document.getElementById("sitFeedback").className = "feedback";
+  document.getElementById("sitNext").style.display = "none";
+}
+
+function selectSit(i) {
+  if (sitAnswered) return;
+  sitAnswered = true;
+  const item = sitQs[sitIdx];
+  document.querySelectorAll("#sitChoices .choice").forEach((c, idx) => {
+    c.style.pointerEvents = "none";
+    if (idx === item.a) c.classList.add("correct");
+    else if (idx === i) c.classList.add("wrong");
+  });
+  const fb = document.getElementById("sitFeedback");
+  if (i === item.a) {
+    fb.className = "feedback good show";
+    fb.innerHTML = `Professional response selected.<div class="fact">${item.exp}</div>`;
+    addXP(10, "judgment", 3);
+    addXP(0, "communication", 2);
+    addXP(0, "discipline", 2);
+    state.completed.situational++;
+  } else {
+    fb.className = "feedback bad show";
+    fb.innerHTML = `Not the strongest professional choice.<div class="fact">${item.exp}</div>`;
+    addXP(3, "judgment", 1);
+  }
+  document.getElementById("sitNext").style.display = "flex";
+}
+
+function nextSituational() {
+  sitIdx = (sitIdx + 1) % sitQs.length;
+  showSit();
+}
+
+// ===================== REPORT =====================
+const reportQs = [
+  {
+    facts: "Date: 09/15/2026. Time: 2140 hours. Location: 400 block of Oak Street. Reporting party: Maria Lopez stated she heard glass breaking. Officer arrived 2147. Observed shattered rear window of blue Honda Civic, license 7ABC123. No suspects on scene. Homeowner John Reed stated vehicle was locked and undamaged at 2000 hours. No property reported missing at this time. Photographs taken. Area checked with negative results.",
+    choices: [
+      "I went to Oak Street because someone heard glass. There was a broken window on a car. The owner said it was fine earlier. I took pictures and left.",
+      "On 09/15/2026 at approximately 2147 hours, I responded to the 400 block of Oak Street regarding a report of broken glass. I observed the rear window of a blue Honda Civic (CA 7ABC123) to be shattered. The registered owner, John Reed, stated the vehicle had been locked and undamaged at 2000 hours. No property was reported missing. Photographs were taken and the area was checked with negative results.",
+      "Somebody broke a window on Oak Street. Maria Lopez called it in. John Reed owns the car. Nothing was stolen as far as we know.",
+      "Responded to call of broken glass. Window smashed. Took photos. No suspects. Case closed."
+    ],
+    a: 1,
+    exp: "Option B is chronological, specific, uses precise language, includes identifiers, and remains factual without speculation or casual tone."
+  },
+  {
+    facts: "Traffic stop, 11/02/2026, 1530 hours, Main St at 3rd Ave. Driver: Robert Kim, DOB 04/12/1988. Reason for stop: expired registration (observed month tag). Kim provided valid license and proof of insurance. Registration expired 09/2026. Citation issued for expired registration. Kim was cooperative throughout. No search conducted. Stop concluded 1542 hours.",
+    choices: [
+      "Stopped a guy for expired tags. He was nice. Gave him a ticket and let him go.",
+      "On 11/02/2026 at approximately 1530 hours I conducted a traffic stop at Main Street and 3rd Avenue on a vehicle with an expired registration tab. The driver, Robert Kim (DOB 04/12/1988), provided a valid driver’s license and proof of insurance. The registration had expired in September 2026. I issued a citation for expired registration. The driver was cooperative. The stop concluded at 1542 hours. No search was conducted.",
+      "Robert Kim got a ticket because his registration was expired. He had his license and insurance.",
+      "Traffic stop for expired reg. Driver cooperative. Cite issued. 12 minutes."
+    ],
+    a: 1,
+    exp: "Option B contains the necessary elements written in clear professional language."
+  },
+  {
+    facts: "Domestic call, 08/20/2026, 2215 hours, 712 Birch Ave. Parties: Anna Torres and David Torres (married). Anna stated David pushed her during an argument about finances; she had a small bruise on left forearm. David stated Anna threw a remote control at him first and he only pushed her away. Both declined medical aid. No children present. Parties separated for the night by mutual agreement. Anna stayed at a friend’s residence. Case documented; no arrest at this time pending further investigation.",
+    choices: [
+      "Domestic. Husband and wife argued. She has a bruise. He says she started it. They agreed to stay apart tonight. No arrest yet.",
+      "On 08/20/2026 at approximately 2215 hours I responded to 712 Birch Avenue regarding a domestic disturbance. Anna Torres stated David Torres pushed her during an argument, resulting in a small bruise on her left forearm. David Torres stated Anna threw a remote control at him and he pushed her away. Both parties declined medical attention. No children were present. The parties agreed to separate for the night; Anna went to a friend’s residence. The incident was documented. No arrest was made at this time.",
+      "Anna and David Torres had a fight. She got a bruise. He claims self-defense. They split up for the night.",
+      "Responded to domestic. Mutual combat alleged. Parties separated. Report only."
+    ],
+    a: 1,
+    exp: "Option B records both statements accurately, notes physical observation, medical refusal, absence of children, and the agreed separation without bias."
+  }
+];
+
+let reportIdx = 0, reportAnswered = false;
+
+function startReport() {
+  reportIdx = Math.floor(Math.random() * reportQs.length);
+  showReport();
+}
+
+function showReport() {
+  reportAnswered = false;
+  const item = reportQs[reportIdx];
+  document.getElementById("reportFacts").textContent = item.facts;
+  const ch = document.getElementById("reportChoices");
+  ch.innerHTML = "";
+  item.choices.forEach((c, i) => {
+    const d = document.createElement("div");
+    d.className = "choice";
+    d.textContent = c;
+    d.onclick = () => selectReport(i);
+    ch.appendChild(d);
+  });
+  document.getElementById("reportFeedback").className = "feedback";
+  document.getElementById("reportNext").style.display = "none";
+}
+
+function selectReport(i) {
+  if (reportAnswered) return;
+  reportAnswered = true;
+  const item = reportQs[reportIdx];
+  document.querySelectorAll("#reportChoices .choice").forEach((c, idx) => {
+    c.style.pointerEvents = "none";
+    if (idx === item.a) c.classList.add("correct");
+    else if (idx === i) c.classList.add("wrong");
+  });
+  const fb = document.getElementById("reportFeedback");
+  if (i === item.a) {
+    fb.className = "feedback good show";
+    fb.innerHTML = `Strong professional summary.<div class="fact">${item.exp}</div>`;
+    addXP(12, "writing", 4);
+    addXP(0, "organization", 2);
+    state.completed.report++;
+  } else {
+    fb.className = "feedback bad show";
+    fb.innerHTML = `The highlighted version is clearer and more complete.<div class="fact">${item.exp}</div>`;
+    addXP(3, "writing", 1);
+  }
+  document.getElementById("reportNext").style.display = "flex";
+}
+
+function nextReport() {
+  reportIdx = (reportIdx + 1) % reportQs.length;
+  showReport();
+}
+
+// ===================== RADIO =====================
+const radioQs = [
+  { q: "What is the correct phonetic alphabet for the license plate “B4K9”?", choices: ["Bravo Four Kilo Nine", "Baker Four King Nine", "Bravo For Kilo Niner", "Blue Four Kilo Nine"], a: 0, exp: "Standard NATO/ICAO phonetic: Bravo, Four, Kilo, Nine." },
+  { q: "Which transmission is most professional and concise?", choices: [
+    "Uh, yeah, this is unit 12, I think I might need another unit maybe at the store on Main, there’s like a fight or something going on.",
+    "Unit 12, 10-32 at Main Street Market, request backup, two subjects fighting in parking lot.",
+    "Hey, can someone come help me at the store? It’s getting crazy.",
+    "12 to dispatch, I have a situation, please send everyone."
+  ], a: 1, exp: "Clear unit ID, location, nature of call, and specific request without filler or emotion." },
+  { q: "The phonetic letter for “M” is:", choices: ["Mary", "Mike", "Metro", "Monday"], a: 1, exp: "Standard is Mike." },
+  { q: "Best way to acknowledge a radio message you received and understood:", choices: ["Copy", "10-4", "Okay, got it", "Both “Copy” or “10-4” are commonly accepted depending on agency policy"], a: 3, exp: "Agencies vary; both are widely used. Consistency with your department’s protocol is key." },
+  { q: "When broadcasting a suspect description, the preferred order of information is generally:", choices: [
+    "Clothing first, then height, then race, then direction of travel",
+    "Race/sex, height/weight, hair, clothing, direction of travel / vehicle",
+    "Name if known, then clothing, then anything else",
+    "Whatever comes to mind first"
+  ], a: 1, exp: "A structured order helps other units form a mental image quickly and consistently." },
+  { q: "You need to spell a difficult last name over the radio. Best practice:", choices: [
+    "Say the name once and hope they hear it",
+    "Use the phonetic alphabet and speak clearly at a measured pace",
+    "Spell it as fast as possible to save air time",
+    "Text it instead of using the radio"
+  ], a: 1, exp: "Phonetic alphabet + clear, deliberate speech reduces errors under stress." }
+];
+
+let radioIdx = 0, radioAnswered = false;
+
+function startRadio() {
+  radioIdx = Math.floor(Math.random() * radioQs.length);
+  showRadio();
+}
+
+function showRadio() {
+  radioAnswered = false;
+  const item = radioQs[radioIdx];
+  document.getElementById("radioQ").textContent = item.q;
+  const ch = document.getElementById("radioChoices");
+  ch.innerHTML = "";
+  item.choices.forEach((c, i) => {
+    const d = document.createElement("div");
+    d.className = "choice";
+    d.textContent = c;
+    d.onclick = () => selectRadio(i);
+    ch.appendChild(d);
+  });
+  document.getElementById("radioFeedback").className = "feedback";
+  document.getElementById("radioNext").style.display = "none";
+}
+
+function selectRadio(i) {
+  if (radioAnswered) return;
+  radioAnswered = true;
+  const item = radioQs[radioIdx];
+  document.querySelectorAll("#radioChoices .choice").forEach((c, idx) => {
+    c.style.pointerEvents = "none";
+    if (idx === item.a) c.classList.add("correct");
+    else if (idx === i) c.classList.add("wrong");
+  });
+  const fb = document.getElementById("radioFeedback");
+  if (i === item.a) {
+    fb.className = "feedback good show";
+    fb.innerHTML = `Correct.<div class="fact">${item.exp}</div>`;
+    addXP(8, "communication", 3);
+    state.completed.radio++;
+  } else {
+    fb.className = "feedback bad show";
+    fb.innerHTML = `Review the explanation.<div class="fact">${item.exp}</div>`;
+    addXP(2, "communication", 1);
+  }
+  document.getElementById("radioNext").style.display = "flex";
+}
+
+function nextRadio() {
+  radioIdx = (radioIdx + 1) % radioQs.length;
+  showRadio();
+}
+
+// ===================== SHIFT =====================
+const callPool = [
+  { text: "Armed robbery just occurred, suspects fled on foot, 2 minutes ago", urgency: "high" },
+  { text: "Domestic disturbance, parties still on scene, possible weapons mentioned", urgency: "high" },
+  { text: "Traffic collision with unknown injuries, blocking intersection", urgency: "high" },
+  { text: "Suspicious person looking into vehicles in parking lot", urgency: "med" },
+  { text: "Loud music complaint, ongoing for 30 minutes", urgency: "low" },
+  { text: "Found property (wallet) turned in at front desk", urgency: "low" },
+  { text: "Welfare check on elderly resident, no answer at door, mail piling up", urgency: "med" },
+  { text: "Report of past theft (occurred yesterday), reporting party waiting", urgency: "low" }
+];
+
+let shiftTimer = null, shiftSeconds = 180, priorityOrder = [];
+
+function startShift() {
+  shiftSeconds = 180;
+  priorityOrder = shuffle([...callPool]).slice(0, 6);
+  renderPriorities();
+  document.getElementById("shiftFeedback").className = "feedback";
+  clearInterval(shiftTimer);
+  const el = document.getElementById("shiftTimer");
+  el.classList.remove("urgent");
+  shiftTimer = setInterval(() => {
+    shiftSeconds--;
+    const m = String(Math.floor(shiftSeconds / 60)).padStart(2, "0");
+    const s = String(shiftSeconds % 60).padStart(2, "0");
+    el.textContent = `${m}:${s}`;
+    if (shiftSeconds <= 30) el.classList.add("urgent");
+    if (shiftSeconds <= 0) {
+      clearInterval(shiftTimer);
+      submitPriorities(true);
+    }
+  }, 1000);
+}
+
+function renderPriorities() {
+  const list = document.getElementById("priorityList");
+  list.innerHTML = "";
+  priorityOrder.forEach((c, i) => {
+    const li = document.createElement("li");
+    li.className = "priority-item";
+    li.draggable = true;
+    li.dataset.idx = i;
+    li.innerHTML = `<span>${c.text}</span><span class="urgency ${c.urgency}">${c.urgency.toUpperCase()}</span>`;
+    // Touch-friendly drag
+    li.addEventListener("dragstart", e => {
+      e.dataTransfer.setData("text/plain", i);
+      li.style.opacity = "0.5";
+    });
+    li.addEventListener("dragend", () => li.style.opacity = "1");
+    li.addEventListener("dragover", e => e.preventDefault());
+    li.addEventListener("drop", e => {
+      e.preventDefault();
+      const from = +e.dataTransfer.getData("text/plain");
+      const to = +li.dataset.idx;
+      if (from === to) return;
+      const item = priorityOrder.splice(from, 1)[0];
+      priorityOrder.splice(to, 0, item);
+      renderPriorities();
+    });
+    list.appendChild(li);
+  });
+}
+
+function submitPriorities(timedOut = false) {
+  clearInterval(shiftTimer);
+  let score = 0;
+  priorityOrder.forEach((c, i) => {
+    if (c.urgency === "high" && i < 3) score += 3;
+    else if (c.urgency === "med" && i < 4) score += 2;
+    else if (c.urgency === "low" && i >= 3) score += 1;
+  });
+  const fb = document.getElementById("shiftFeedback");
+  if (score >= 10) {
+    fb.className = "feedback good show";
+    fb.innerHTML = `Strong prioritization. High-urgency calls were correctly placed near the top.${timedOut ? " (Time expired — still evaluated.)" : ""}`;
+    addXP(15, "organization", 4);
+    addXP(0, "discipline", 2);
+  } else if (score >= 6) {
+    fb.className = "feedback good show";
+    fb.innerHTML = `Acceptable prioritization. Review which calls demand immediate response versus those that can wait.`;
+    addXP(8, "organization", 2);
+  } else {
+    fb.className = "feedback bad show";
+    fb.innerHTML = `Priorities need work. Life-safety and in-progress crimes generally take precedence over non-emergency reports.`;
+    addXP(3, "organization", 1);
+  }
+  state.completed.shift++;
+}
+
+function shuffle(a) {
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+// ===================== STRESS =====================
+let breathCount = 0;
+
+function startStress() {
+  document.getElementById("stressAfter").style.display = "none";
+  document.getElementById("startBreath").style.display = "inline-block";
+  document.getElementById("breathCircle").textContent = "Ready";
+  document.getElementById("breathCircle").className = "breath-circle";
+  document.getElementById("stressInstruct").textContent = "When pressure rises, controlled breathing restores clarity. Follow the circle.";
+  document.getElementById("stressFeedback").className = "feedback";
+}
+
+function startBreathing() {
+  document.getElementById("startBreath").style.display = "none";
+  breathCount = 0;
+  runBreathCycle();
+}
+
+function runBreathCycle() {
+  const circle = document.getElementById("breathCircle");
+  const instruct = document.getElementById("stressInstruct");
+  if (breathCount >= 4) {
+    circle.textContent = "Reset Complete";
+    circle.className = "breath-circle";
+    instruct.textContent = "Composure restored. Now apply it.";
+    showStressScenario();
+    return;
+  }
+  breathCount++;
+  instruct.textContent = `Cycle ${breathCount}/4 — Inhale slowly (4 seconds)`;
+  circle.textContent = "Inhale";
+  circle.className = "breath-circle inhale";
+  setTimeout(() => {
+    instruct.textContent = `Cycle ${breathCount}/4 — Hold (4 seconds)`;
+    circle.textContent = "Hold";
+    setTimeout(() => {
+      instruct.textContent = `Cycle ${breathCount}/4 — Exhale slowly (4 seconds)`;
+      circle.textContent = "Exhale";
+      circle.className = "breath-circle exhale";
+      setTimeout(runBreathCycle, 4000);
+    }, 4000);
+  }, 4000);
+}
+
+function showStressScenario() {
+  document.getElementById("stressAfter").style.display = "block";
+  const choices = [
+    "Match the citizen’s volume and tell them to calm down immediately.",
+    "Take one additional slow breath if needed, keep your voice steady and lower than theirs, and state: “I hear that you’re upset. I’m going to explain what happens next so we can resolve this.”",
+    "Walk away from the stop without explanation.",
+    "Threaten arrest solely for the yelling."
+  ];
+  const ch = document.getElementById("stressChoices");
+  ch.innerHTML = "";
+  choices.forEach((c, i) => {
+    const d = document.createElement("div");
+    d.className = "choice";
+    d.textContent = c;
+    d.onclick = () => {
+      document.querySelectorAll("#stressChoices .choice").forEach(x => x.style.pointerEvents = "none");
+      const fb = document.getElementById("stressFeedback");
+      if (i === 1) {
+        d.classList.add("correct");
+        fb.className = "feedback good show";
+        fb.innerHTML = `Excellent. You used the reset and chose calm, clear communication. This is disciplined self-control under pressure.`;
+        addXP(12, "discipline", 4);
+        addXP(0, "communication", 2);
+      } else {
+        d.classList.add("wrong");
+        document.querySelectorAll("#stressChoices .choice")[1].classList.add("correct");
+        fb.className = "feedback bad show";
+        fb.innerHTML = `The professional choice is to remain calm, acknowledge the emotion without absorbing it, and clearly guide the interaction.`;
+        addXP(3, "discipline", 1);
+      }
+      state.completed.stress++;
+    };
+    ch.appendChild(d);
+  });
+}
+
+// ===================== LOG & STANDARDS =====================
+function showLog() {
+  document.querySelectorAll(".screen").forEach(s => s.classList.remove("active"));
+  document.getElementById("log").classList.add("active");
+  const content = document.getElementById("logContent");
+  if (state.log.length === 0) {
+    content.innerHTML = "<p style='color:var(--muted)'>No entries yet. Complete training modules to build your career log.</p>";
+    return;
+  }
+  content.innerHTML = state.log.map(e => `
+    <div class="log-entry">
+      <div class="time">${e.time}</div>
+      <div>${e.text}</div>
+    </div>`).join("");
+}
+
+function showStandards() {
+  document.querySelectorAll(".screen").forEach(s => s.classList.remove("active"));
+  document.getElementById("standards").classList.add("active");
+  document.getElementById("standardsContent").innerHTML = `
+    <h3 style="color:var(--accent2); margin-bottom:12px;">Core Professional Habits</h3>
+    <p style="margin-bottom:12px;"><strong>1. Accuracy over speed.</strong> A clear, correct report is more valuable than a fast, flawed one.</p>
+    <p style="margin-bottom:12px;"><strong>2. Emotional regulation is a skill.</strong> You will encounter anger, fear, and chaos. Your ability to remain calm directly affects safety and outcomes.</p>
+    <p style="margin-bottom:12px;"><strong>3. Communication is its own continuum.</strong> Most situations are resolved with words. Practice concise, respectful, firm language daily.</p>
+    <p style="margin-bottom:12px;"><strong>4. Organization protects you and the public.</strong> Prioritize life safety, then in-progress crimes, then reports and follow-ups.</p>
+    <p style="margin-bottom:12px;"><strong>5. Self-control under pressure is non-negotiable.</strong> Training builds the reasonableness that the public and courts expect.</p>
+    <p style="margin-bottom:12px;"><strong>6. Continuous improvement.</strong> Rank and skill in this simulator reflect consistent practice. Real competence is built the same way.</p>
+    <p style="color:var(--muted); margin-top:18px; font-size:0.9rem;">This simulator reinforces professional habits. Always defer to your agency policy, state law, and academy instruction.</p>
+  `;
+}
+
+// ===================== INIT =====================
+load();
+updateDash();
+</script>
+</body>
+</html>
